@@ -33,9 +33,8 @@ SOURCES=ccdbg.c intelhex.c ccdbg-main.c
 LIBRARIES=
 
 # for Raspbian on Raspberry Pi
-HEADERS+=GPIO.h
-SOURCES+=GPIO.cpp ccdbg-rpi.cpp
-LIBRARIES+=-lpthread
+SOURCES+=ccdbg-gpiod.c
+LIBRARIES+=-lpthread -lgpiod
 
 default all: $(BIN)
 

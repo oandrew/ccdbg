@@ -24,43 +24,76 @@
  */
 
 #include "ccdbg.h"
-#include "GPIO.h"
+#include <stdio.h>
+#include <err.h>
+#include <gpiod.h>
+#include <time.h>
 
-#define RESET	25	// GPIO4, pin 7
-#define DC		23	// GPIO0, pin 3
-#define DD		24	// GPIO1, pin 5
+static struct gpiod_chip * chip;
 
-static GPIO resetPin(RESET, true);
-static GPIO dcPin(DC, true);
-static GPIO ddPin(DD, true);
-static GPIO *gpio[3] = { &resetPin, &dcPin, &ddPin };
+#define RESET	25	// 0
+#define DC		23	// 1
+#define DD		24	// 2
 
+static struct gpiod_line* gpio[3];
+//= { gpio_reset, gpio_dc, gpio_dd };
+
+//#define _printf(...) printf(__VA_ARGS__)
+#define _printf(...) 
 int ccdbgDevice_initialize(void)
 {
-	return (!resetPin.isActive() || !dcPin.isActive() || !ddPin.isActive()) ? -1 : 0;
+  _printf("%s\n", __FUNCTION__);
+  chip = gpiod_chip_open_by_number(0);
+  if(chip == 0) {
+    warn("bad chip");
+    return -1;
+  }
+
+  gpio[CCDBG_PIN_RESET] = gpiod_chip_get_line(chip, RESET);
+  gpio[CCDBG_PIN_DC] = gpiod_chip_get_line(chip, DC);
+  gpio[CCDBG_PIN_DD] = gpiod_chip_get_line(chip, DD);
+
+  for(int i = 0; i < 3; i++) {
+    if(gpio[i] == 0) return -1;
+    _printf("gpio %d ok\n", i);
+  }
+
+  return 0;
+
 }
 
 void ccdbgDevice_destroy(void)
 {
-	// no operation
+  _printf("%s\n", __FUNCTION__);
 }
 
 void ccdbgDevice_setPinState(CCDBG_PIN pin, int high)
 {
-	gpio[pin]->setState(high ? GPIO_STATE_HIGH : GPIO_STATE_LOW);
+  gpiod_line_set_value(gpio[pin], high);
+  _printf("%s %d set %d\n", __FUNCTION__, pin, high);
 }
 
 int ccdbgDevice_getPinState(CCDBG_PIN pin)
 {
-	return (gpio[pin]->state() == GPIO_STATE_HIGH) ? 1 : 0;
+  int v =gpiod_line_get_value(gpio[pin]); 
+  _printf("%s %d get %d\n", __FUNCTION__, pin, v);
+	return  v;
 }
 
 void ccdbgDevice_setPinDirection(CCDBG_PIN pin, int output)
 {
-	gpio[pin]->setDirection(output ? GPIO_DIRECTION_OUTPUT : GPIO_DIRECTION_INPUT);
+  gpiod_line_release(gpio[pin]);
+  if(output) {
+	  gpiod_line_request_output(gpio[pin], "ccdebug", 0);
+  } else {
+	  gpiod_line_request_input(gpio[pin], "ccdebug");
+  }
+  gpiod_line_update(gpio[pin]);
+  _printf("%s %d set %d\n", __FUNCTION__, pin, output);
 }
 
 void ccdbgDevice_delay(void)
 {
 	// no operation
+
 }
