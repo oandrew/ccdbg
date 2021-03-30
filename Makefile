@@ -24,7 +24,7 @@
 #
 
 CC=g++
-CFLAGS=-Wall
+CFLAGS=-Wall -O3 -g
 
 # common
 BIN=ccdbg

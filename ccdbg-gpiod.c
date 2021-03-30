@@ -49,9 +49,16 @@ int ccdbgDevice_initialize(void)
     return -1;
   }
 
+  const struct gpiod_line_request_config cfg = {
+  	"ccdbg", GPIOD_LINE_REQUEST_DIRECTION_OUTPUT, 0
+  }; 
+
   gpio[CCDBG_PIN_RESET] = gpiod_chip_get_line(chip, RESET);
+  gpiod_line_request(gpio[CCDBG_PIN_RESET], &cfg, 0);
   gpio[CCDBG_PIN_DC] = gpiod_chip_get_line(chip, DC);
+  gpiod_line_request(gpio[CCDBG_PIN_DC], &cfg, 0);
   gpio[CCDBG_PIN_DD] = gpiod_chip_get_line(chip, DD);
+  gpiod_line_request(gpio[CCDBG_PIN_DD], &cfg, 0);
 
   for(int i = 0; i < 3; i++) {
     if(gpio[i] == 0) return -1;
@@ -82,18 +89,25 @@ int ccdbgDevice_getPinState(CCDBG_PIN pin)
 
 void ccdbgDevice_setPinDirection(CCDBG_PIN pin, int output)
 {
-  gpiod_line_release(gpio[pin]);
+  //gpiod_line_release(gpio[pin]);
   if(output) {
-	  gpiod_line_request_output(gpio[pin], "ccdebug", 0);
+	//gpiod_line_request_output(gpio[pin], "ccdebug", 0);
+	gpiod_line_set_direction_output(gpio[pin], 0);
   } else {
-	  gpiod_line_request_input(gpio[pin], "ccdebug");
+	//gpiod_line_request_input(gpio[pin], "ccdebug");
+	gpiod_line_set_direction_input(gpio[pin]);
   }
-  gpiod_line_update(gpio[pin]);
+  //gpiod_line_update(gpio[pin]);
   _printf("%s %d set %d\n", __FUNCTION__, pin, output);
 }
+
+static volatile unsigned int  _delay_i = 0;
 
 void ccdbgDevice_delay(void)
 {
 	// no operation
+	//const struct timespec req = {0, 50};
+	//nanosleep(&req, 0);
+	for (_delay_i = 0; _delay_i < 1000; ++_delay_i) {}
 
 }
